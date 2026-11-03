@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Campus – Room Availability</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0 auto; padding: 1rem; max-width: 960px; color: #1d2433; }
+    .layout { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+    @media (min-width: 720px) { .layout { grid-template-columns: 1fr 1fr; } }
+    fieldset { border: 1px solid #d0d6e2; border-radius: 8px; padding: .75rem; }
+    .rooms { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+    .room { display: block; border: 1px solid #d0d6e2; border-radius: 8px; padding: .6rem; cursor: pointer; }
+    .room.selected { border-color: #2b6cb0; background: #ebf4ff; }
+    .room small { display: block; color: #5a6478; }
+    .badge { color: #a61b1b; font-style: normal; font-weight: 600; }
+    .empty { padding: 1rem; border: 1px dashed #a0aec0; border-radius: 8px; }
+    .result { padding: .75rem; border-radius: 8px; font-weight: 600; }
+    .ok { background: #e6f6ec; color: #1e6b3a; }
+    .fail { background: #fdecec; color: #a61b1b; }
+    .hint { color: #5a6478; }
+    input, button { font: inherit; padding: .4rem; }
+  </style>
+</head>
+<body>
+  <h1>Room Availability Checker</h1>
+  <p>Demo day — current time fixed at <strong id="now"></strong>. All data is fictional.</p>
+  <div class="layout">
+    <section>
+      <form id="filters">
+        <fieldset>
+          <legend>Requirements</legend>
+          <label>Attendees <input id="attendees" type="number" min="1" value="1"></label>
+          <div id="equipment"></div>
+        </fieldset>
+      </form>
+      <h2>Matching rooms</h2>
+      <div id="rooms"></div>
+    </section>
+    <section>
+      <form id="booking">
+        <fieldset>
+          <legend>Time slot</legend>
+          <label>Start <input id="start" type="time" required></label>
+          <label>End <input id="end" type="time" required></label>
+          <button id="check" type="submit">Check availability</button>
+        </fieldset>
+      </form>
+      <div id="result" aria-live="polite"></div>
+    </section>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
