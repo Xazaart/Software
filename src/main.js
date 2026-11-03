@@ -22,6 +22,9 @@ function paint() {
 $("now").textContent = CURRENT_TIME;
 $("equipment").innerHTML = renderEquipmentOptions(EQUIPMENT);
 
+// Pressing Enter in the attendees field would otherwise submit the form and reload the page,
+// silently resetting all filters (found in manual UI check, not covered by node tests).
+$("filters").addEventListener("submit", (e) => e.preventDefault());
 $("filters").addEventListener("input", () => {
   state = app.setCriteria(state, readCriteria());
   paint();
