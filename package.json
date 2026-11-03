@@ -1,0 +1,9 @@
+{
+  "name": "smart-campus-rooms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:baseline": "node --test baseline/baseline.test.js"
+  }
+}

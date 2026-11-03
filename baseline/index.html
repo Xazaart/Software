@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Room Checker (baseline)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 1rem; max-width: 480px; margin: auto; }
+    .ok { color: #1e6b3a; } .fail { color: #a61b1b; }
+  </style>
+</head>
+<body>
+  <h1>Aurora Seminar Room</h1>
+  <p>Current time: 09:00 (fixed)</p>
+  <label>Start <input id="start" type="time"></label>
+  <label>End <input id="end" type="time"></label>
+  <button id="check">Check</button>
+  <p id="result" aria-live="polite"></p>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
