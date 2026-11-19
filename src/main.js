@@ -1,16 +1,17 @@
 import { EQUIPMENT, CURRENT_TIME } from "./data/rooms.js";
 import * as app from "./app/controller.js";
 import { renderEquipmentOptions, renderRoomList, renderResult } from "./ui/render.js";
+import { normalizeCriteria } from "./core/filters.js";
 
 let state = app.createInitialState();
 const $ = (id) => document.getElementById(id);
 
+// DOM only: read raw values; the rule for valid criteria lives in core/filters.js.
 function readCriteria() {
-  const n = Number($("attendees").value);
-  return {
-    attendees: Number.isInteger(n) && n > 0 ? n : 1,
+  return normalizeCriteria({
+    attendees: $("attendees").value,
     equipment: [...document.querySelectorAll('input[name="equipment"]:checked')].map((i) => i.value),
-  };
+  });
 }
 
 function paint() {

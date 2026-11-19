@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ROOMS, CURRENT_TIME } from "../src/data/rooms.js";
-import { filterRooms } from "../src/core/filters.js";
+import { filterRooms, normalizeCriteria } from "../src/core/filters.js";
 import { checkAvailability } from "../src/core/availability.js";
 import { renderRoomList } from "../src/ui/render.js";
 
@@ -33,4 +33,12 @@ test("F4: no matching rooms renders a clear empty state", () => {
 test("Availability uses the chosen room's own bookings", () => {
   assert.equal(checkAvailability(byId("R101"), "09:30", "10:00", CURRENT_TIME).available, true);
   assert.equal(checkAvailability(byId("R202"), "09:30", "10:00", CURRENT_TIME).code, "CONFLICT");
+});
+test("Criteria normalization: valid attendee counts are kept", () => {
+  assert.deepEqual(normalizeCriteria({ attendees: "12", equipment: ["projector"] }), { attendees: 12, equipment: ["projector"] });
+});
+test("Criteria normalization: empty, zero, negative, fractional and text fall back to 1 (same as before the refactor)", () => {
+  for (const raw of ["", "0", "-5", "2.5", "abc"]) {
+    assert.equal(normalizeCriteria({ attendees: raw, equipment: [] }).attendees, 1, `input ${JSON.stringify(raw)}`);
+  }
 });
