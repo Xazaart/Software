@@ -4,9 +4,10 @@ import { renderEquipmentOptions, renderRoomList, renderResult, renderExplanation
 import { normalizeCriteria } from "./core/filters.js";
 import { createMockAdapter, MOCK_MODES } from "./explain/mockAdapter.js";
 import { explainAvailability } from "./explain/service.js";
+import { createRequestGate } from "./app/requestGate.js";
 
 let state = app.createInitialState();
-let pendingExplanation = false;
+const explainGate = createRequestGate(); // review fix R1: one id per Explain click
 
 // Mock only (no network, no keys). For manual failure checks open index.html?mock=slow|throw|empty|long|contradict|...
 const requestedMode = new URLSearchParams(location.search).get("mock");
@@ -15,7 +16,7 @@ const adapter = createMockAdapter({ mode: MOCK_MODES.includes(requestedMode) ? r
 // Any state change made by the user drops a pending or shown explanation (EX-6).
 function update(next) {
   state = next;
-  pendingExplanation = false;
+  explainGate.invalidate();
   paint();
 }
 const $ = (id) => document.getElementById(id);
@@ -32,8 +33,8 @@ function paint() {
   $("rooms").innerHTML = renderRoomList(app.visibleRooms(state), state.selectedRoomId);
   $("result").innerHTML = renderResult(state.result, Boolean(state.selectedRoomId));
   $("check").disabled = !state.selectedRoomId;
-  $("explanation").innerHTML = renderExplanation(state.explanation, { pending: pendingExplanation });
-  $("explain").disabled = pendingExplanation || !app.canExplain(state); // EX-2
+  $("explanation").innerHTML = renderExplanation(state.explanation, { pending: explainGate.pending() });
+  $("explain").disabled = explainGate.pending() || !app.canExplain(state); // EX-2
 }
 
 $("now").textContent = CURRENT_TIME;
@@ -60,11 +61,11 @@ $("booking").addEventListener("submit", (e) => {
 $("explain").addEventListener("click", async () => {
   const context = app.explanationContext(state);
   if (!context) return;
-  pendingExplanation = true;
+  const id = explainGate.begin();
   paint();
   const explanation = await explainAvailability(context, adapter); // never rejects; falls back on failure
-  if (!pendingExplanation) return; // inputs changed meanwhile: discard (EX-6)
-  pendingExplanation = false;
+  if (!explainGate.isCurrent(id)) return; // a newer click or an input change happened meanwhile: discard (EX-6)
+  explainGate.finish(id);
   state = app.setExplanation(state, context, explanation); // result is never touched (EX-1)
   paint();
 });
