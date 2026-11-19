@@ -24,6 +24,15 @@ export function renderRoomList(rooms, selectedId) {
     .join("")}</ul>`;
 }
 
+/** Separate box under the result; the decision itself is only ever shown by renderResult(). */
+export function renderExplanation(explanation, { pending = false } = {}) {
+  if (pending) return `<p class="explanation pending" role="status">Preparing explanation…</p>`;
+  if (!explanation) return "";
+  const label = explanation.source === "fallback" ? "AI explanation unavailable" : "Explanation (mock AI)";
+  return `<div class="explanation ${explanation.source === "fallback" ? "fallback" : "llm"}" role="status">`
+    + `<p class="explanation-label">${esc(label)}</p><p>${esc(explanation.text)}</p></div>`;
+}
+
 /** One renderer for every outcome (replaces the duplicated if/else in the baseline). */
 export function renderResult(result, hasRoom) {
   if (!hasRoom) return `<p class="hint">Select a room to check availability.</p>`;
