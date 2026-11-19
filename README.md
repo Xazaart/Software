@@ -6,7 +6,7 @@ Fictional data, fixed current time (09:00). No login, database or live APIs.
 - Acceptance criteria that must stay true: [ACCEPTANCE.md](ACCEPTANCE.md).
 
 ## Requirements
-Node.js 18+ (tests). Any static file server (app), because ES modules don't load over file://.
+Node.js 22+ (tests; `npm test` uses a glob, so every `tests/*.test.js` file runs). Any static file server (app), because ES modules don't load over file://.
 
 ## Run
 ```
@@ -16,7 +16,7 @@ Final app: http://localhost:8080/ · Baseline: http://localhost:8080/baseline/
 
 ## Test
 ```
-npm test                # final version (18 tests)
+npm test                # final version: all tests/**/*.test.js
 npm run test:baseline   # original version (9 tests)
 ```
 
