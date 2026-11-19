@@ -184,8 +184,11 @@ test("validator: boundaries for length and sentence count", () => {
 });
 test("validator: negated phrasing is not mistaken for the opposite decision", () => {
   const ctx = CASES.CONFLICT();
-  assert.equal(validateExplanation(`${ctx.roomName} is not available at 10:00.`, ctx).ok, true);
-  assert.equal(validateExplanation(`${ctx.roomName} cannot be booked now.`, ctx).ok, true);
+  // Updated after review fix R2: a CONFLICT explanation must name the conflicting booking,
+  // and must open with the decision sentence (stricter than the AI's first version).
+  assert.equal(validateExplanation(`${ctx.roomName} is not available because it is already booked from 09:30 to 11:30.`, ctx).ok, true);
+  assert.equal(validateExplanation(`${ctx.roomName} is not available at 10:00.`, ctx).reason, "missing-fact");
+  assert.equal(validateExplanation(`${ctx.roomName} cannot be booked now.`, ctx).reason, "missing-decision");
   assert.equal(validateExplanation(`${ctx.roomName} is free.`, ctx).reason, "contradicts-decision");
   assert.equal(validateExplanation("The weather is nice.", ctx).reason, "missing-decision");
   assert.equal(validateExplanation(`${ctx.roomName} is not available, try R303.`, ctx).reason, "unsupported-fact");
