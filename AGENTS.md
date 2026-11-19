@@ -13,12 +13,14 @@ network API, deployment or real user data. Keep it that way.
 index.html → src/main.js            DOM wiring only (read inputs, call controller, paint)
               src/ui/render.js       pure functions → HTML strings; every dynamic value goes through esc()
               src/app/controller.js  pure state transitions; never touches the DOM
+              src/explain/*.js       "Explain availability": context builder, MOCK adapter, output validator,
+                                     fallback texts, service (timeout + fallback). Never changes the decision.
               src/core/*.js          business rules (time parsing, AC1–AC5, filters F1–F2); no DOM, no data imports
               src/data/rooms.js      fictional, deep-frozen room catalog + CURRENT_TIME
 baseline/   FROZEN legacy prototype kept as evidence for Assignment #04. Do not edit.
 tests/      node:test suites for the final version (run by `npm test`)
 ```
-Rules: `core/` must not import from `ui/`, `app/` or `main.js`. Business rules belong in `core/`, not in `main.js`.
+Rules: `core/` must not import from `ui/`, `app/`, `explain/` or `main.js`; `explain/` may import only from `core/`. Business rules belong in `core/`, not in `main.js`.
 
 ## 3. Setup
 - Node.js **22 or newer** (uses `node --test` with glob patterns). No `npm install` is needed: the project has **zero dependencies**.

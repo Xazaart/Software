@@ -33,8 +33,10 @@ src/data/rooms.js    fictional catalog of 5 rooms (data only, deep-frozen)
 src/core/time.js     HH:MM -> minutes (the only time parser)
 src/core/availability.js   AC1–AC5 rules, returns { available, code, message }
 src/core/filters.js  F1 capacity, F2 equipment
-src/app/controller.js      pure state transitions (select room, filters, time slot)
+src/app/controller.js      pure state transitions (select room, filters, time slot, explanation)
+src/explain/         optional "Explain availability" (see EXPLAIN_FEATURE.md): context.js, mockAdapter.js,
+                     validate.js, fallback.js, service.js — mock only, no network, decision never changed
 src/ui/render.js     HTML rendering (room list, empty state, one result renderer)
 src/main.js          DOM wiring only
-tests/               regression (AC1–AC5), filters (F1–F4), integration (F5)
+tests/               regression (AC1–AC5), filters (F1–F4), integration (F5), explain (EX-1..EX-7)
 ```
