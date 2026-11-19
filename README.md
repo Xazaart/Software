@@ -1,6 +1,9 @@
-# Smart Campus – Room Availability Checker (Assignment #04)
+# Smart Campus – Room Availability Checker (Assignments #04–#05)
 
 Fictional data, fixed current time (09:00). No login, database or live APIs.
+
+- AI agents: read [AGENTS.md](AGENTS.md) (Claude Code loads it via [CLAUDE.md](CLAUDE.md)).
+- Acceptance criteria that must stay true: [ACCEPTANCE.md](ACCEPTANCE.md).
 
 ## Requirements
 Node.js 18+ (tests). Any static file server (app), because ES modules don't load over file://.
