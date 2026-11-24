@@ -1,3 +1,20 @@
+# Smart Campus – Practice #12: code-based vs low-code
+
+Arsen Abilmazhin · 24B032178 · Software Engineering, Tuesday 16:00–19:00
+
+| What | Where |
+|---|---|
+| Report (PDF) | [practice12/report/Practice12_Abilmazhin_Arsen.pdf](practice12/report/Practice12_Abilmazhin_Arsen.pdf) |
+| Shared contract / acceptance criteria | [practice12/CONTRACT.md](practice12/CONTRACT.md), test inputs [practice12/test-cases.json](practice12/test-cases.json) |
+| Code-based solution (HTML/JS) | [practice12/code/](practice12/code/) – unit tests in [tests/p12-code.test.js](tests/p12-code.test.js) |
+| Low-code solution (Node-RED + FlowFuse Dashboard 2.0) | [practice12/lowcode/](practice12/lowcode/) – exported `flows.json` (AI-authored as JSON, see report) |
+| Identical UI test runners | [practice12/ui-tests/](practice12/ui-tests/) |
+| Screenshots and raw evidence | [practice12/report/screenshots/](practice12/report/screenshots/), [practice12/report/evidence/](practice12/report/evidence/) |
+
+Run the code-based app: `python3 -m http.server 8080 --bind 127.0.0.1` in the repo root, then open http://127.0.0.1:8080/practice12/code/ · tests: `npm test` (Node 22+).
+
+---
+
 # Smart Campus – Room Availability Checker (Assignments #04–#05)
 
 Fictional data, fixed current time (09:00). No login, database or live APIs.
