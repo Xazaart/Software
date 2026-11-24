@@ -1,0 +1,73 @@
+# Security checks (safe, local only: both apps run on 127.0.0.1 in Claude's sandbox; no third-party service was scanned)
+# 2026-11-24T16:34:29Z
+
+## LOW-CODE (Node-RED Node-RED v4.1.18 + Dashboard 2)
+$ curl -s -o /dev/null -w 'GET /flows without login -> HTTP %{http_code}\n' http://127.0.0.1:1880/flows
+GET /flows without login -> HTTP 200
+
+$ curl -s http://127.0.0.1:1880/auth/login; echo '  <- /auth/login (empty = no adminAuth configured)'
+{}  <- /auth/login (empty = no adminAuth configured)
+
+$ curl -s -o /dev/null -w 'GET /diagnostics -> HTTP %{http_code}\n' http://127.0.0.1:1880/diagnostics
+GET /diagnostics -> HTTP 200
+
+$ curl -s -m 3 -o /dev/null -w 'non-loopback http://192.0.2.2:1880/ -> HTTP %{http_code}\n' http://192.0.2.2:1880/ || echo 'non-loopback 192.0.2.2:1880 -> connection refused (bound to 127.0.0.1 only)'
+non-loopback http://192.0.2.2:1880/ -> HTTP 000
+non-loopback 192.0.2.2:1880 -> connection refused (bound to 127.0.0.1 only)
+
+$ grep -nE '^\s*(uiHost|uiPort|adminAuth|httpNodeAuth|credentialSecret|functionExternalModules|requireHttps)' userdir/settings.js
+146:    uiPort: 1880,
+153:    uiHost: "127.0.0.1",
+520:    functionExternalModules: true,
+
+$ grep -n 'enabled' userdir/settings.js | head -4
+291:     * - enabled:  When `enabled` is `true` (or unset), diagnostics data will
+298:        enabled: true,
+303:     * - enabled:  When `enabled` is `true` flows runtime can be Started/Stopped
+311:        enabled: false,
+
+$ python3 -c "import json,collections;f=json.load(open('flows.json'));print(collections.Counter(n['type'] for n in f)); print('function nodes:',sum(n['type']=='function' for n in f),'| ui-template nodes:',sum(n['type']=='ui-template' for n in f))"
+Counter({'change': 15, 'switch': 8, 'ui-text': 4, 'ui-group': 3, 'group': 3, 'link out': 2, 'link in': 2, 'tab': 1, 'ui-base': 1, 'ui-theme': 1, 'ui-page': 1, 'inject': 1, 'ui-form': 1, 'link call': 1, 'ui-event': 1, 'ui-table': 1})
+function nodes: 0 | ui-template nodes: 0
+
+$ grep -ciE 'password|secret|token|apikey|api_key' flows.json || true
+0
+
+$ ls node_modules | wc -l; echo '  <- top-level packages installed for the low-code runtime (node_modules)'
+242
+  <- top-level packages installed for the low-code runtime (node_modules)
+
+$ npm audit --omit=dev 2>&1 | tail -4
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+$ cd userdir && npm audit --omit=dev 2>&1 | tail -3
+found 0 vulnerabilities
+
+## CODE-BASED
+$ node -e 'const p=JSON.parse(require("fs").readFileSync("package.json"));console.log("dependencies:",p.dependencies,"devDependencies:",p.devDependencies)'
+dependencies: undefined devDependencies: undefined
+
+$ grep -n 'innerHTML\|textContent' practice12/code/*.js
+practice12/code/main.js:13:  $("bookings").innerHTML = renderBookings(FIXTURE.bookings);
+practice12/code/main.js:16:$("room-name").textContent = `${FIXTURE.roomName} (${FIXTURE.roomId})`;
+practice12/code/main.js:17:$("now").textContent = FIXTURE.now;
+practice12/code/main.js:25:  box.innerHTML = renderResult(result);
+
+$ grep -n 'esc(' practice12/code/render.js | head -5
+2:// No rules here: it only displays what availability.js decided. Every dynamic value goes through esc().
+11:  return `<p class="verdict ${cls}">${esc(verdictLabel(result))}</p>` +
+12:    `<p class="reason" data-code="${esc(result.code)}">${esc(result.message)}</p>`;
+18:    .map((b) => `<li><time>${esc(b.start)}</time>–<time>${esc(b.end)}</time> <span>booked</span></li>`)
+
+$ grep -rnE 'fetch\(|XMLHttpRequest|https?://|password|secret|token' practice12/code || echo 'none found'
+none found
+
+$ curl -sI http://127.0.0.1:8092/practice12/code/ | grep -iE 'content-security|x-frame|server' ; echo '(no CSP/X-Frame-Options headers from the dev server)'
+Server: SimpleHTTP/0.6 Python/3.13.18
+(no CSP/X-Frame-Options headers from the dev server)
+
+{'info': 0, 'low': 0, 'moderate': 27, 'high': 16, 'critical': 0, 'total': 43}
+[('@node-red/registry', 'high'), ('@node-red/runtime', 'high'), ('@npmcli/arborist', 'high'), ('@npmcli/config', 'moderate'), ('@npmcli/map-workspaces', 'moderate'), ('@npmcli/metavuln-calculator', 'high'), ('@npmcli/package-json', 'moderate'), ('@npmcli/run-script', 'moderate'), ('@sigstore/core', 'moderate'), ('@sigstore/sign', 'moderate'), ('@sigstore/tuf', 'moderate'), ('@sigstore/verify', 'moderate'), ('@tufjs/models', 'moderate'), ('brace-expansion', 'high'), ('cacache', 'moderate'), ('glob', 'moderate'), ('ignore-walk', 'moderate'), ('init-package-json', 'moderate'), ('ip-address', 'high'), ('libnpmaccess', 'moderate'), ('libnpmdiff', 'high'), ('libnpmexec', 'high'), ('libnpmfund', 'high'), ('libnpmhook', 'moderate'), ('libnpmorg', 'moderate'), ('libnpmpack', 'high'), ('libnpmpublish', 'high'), ('libnpmsearch', 'moderate'), ('libnpmteam', 'moderate'), ('libnpmversion', 'moderate'), ('make-fetch-happen', 'moderate'), ('minimatch', 'moderate'), ('node-gyp', 'moderate'), ('node-red', 'high'), ('npm', 'high'), ('npm-packlist', 'moderate'), ('npm-profile', 'moderate'), ('npm-registry-fetch', 'moderate'), ('pacote', 'high'), ('picomatch', 'high'), ('postcss-selector-parser', 'moderate'), ('sigstore', 'high'), ('tuf-js', 'moderate')]

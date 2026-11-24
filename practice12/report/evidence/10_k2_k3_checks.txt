@@ -1,0 +1,15 @@
+# K3: stronger per-client DAST (3 independent browser contexts)
+K3 A (own result):               "Available | Available: Aurora Seminar Room is free 11:30–12:30. | AVAILABLE"
+K3 B (open while A checked):     " |  | "
+K3 C (opened after A checked):   " |  | "
+
+# K2: fail-open check. Deletes the bookings from flow context on MY OWN local instance via the unauthenticated Admin API (this also proves K1 write access), then runs T2
+$ curl -s -X DELETE http://127.0.0.1:1880/context/flow/tab_smart_campus/bookings -w "HTTP %{http_code}"
+HTTP 204
+$ curl -s http://127.0.0.1:1880/context/flow/tab_smart_campus/bookings
+{"msg":"(undefined)","format":"undefined"}
+K2 T2 input 10:30/60 (overlaps 10:00–11:00) with bookings deleted: "Available | Available: Aurora Seminar Room is free 10:30–11:30. | AVAILABLE"
+K2 bookings table now: "Start End No data available"
+K6 start=" 11:30" duration="60" | code-based: AVAILABLE | low-code: INVALID_INPUT
+K6 start="11:30" duration=" 60" | code-based: AVAILABLE | low-code: INVALID_DURATION
+K6 start="11:30" duration="060" | code-based: AVAILABLE | low-code: AVAILABLE

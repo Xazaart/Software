@@ -1,0 +1,11 @@
+15c15
+<         "includeClientData": false,
+---
+>         "includeClientData": true,
+16a17
+>             "ui-control",
+18c19,20
+<             "ui-control"
+---
+>             "ui-table",
+>             "ui-text"

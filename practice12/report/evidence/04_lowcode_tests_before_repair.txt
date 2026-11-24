@@ -1,0 +1,63 @@
+PASS [desktop] T1 valid free interval
+     observed: Available | Available: Aurora Seminar Room is free 11:30–12:30. | AVAILABLE
+PASS [desktop] T2 overlap with an existing booking
+     observed: Unavailable | Unavailable: overlaps the existing booking 10:00–11:00. | CONFLICT
+PASS [desktop] T3 blocked room
+     observed: Unavailable | Unavailable: the room is blocked. | BLOCKED
+PASS [desktop] T4 duration = 0
+     observed: Unavailable | Invalid input: duration must be a whole number from 1 to 120 minutes. | INVALID_DURATION
+PASS [desktop] T5 duration = 121 minutes
+     observed: Unavailable | Invalid input: duration must be a whole number from 1 to 120 minutes. | INVALID_DURATION
+PASS [desktop] T6 past start time
+     observed: Unavailable | Invalid input: start time must be after the current time 09:00. | IN_PAST
+PASS [desktop] T7 adjacent non-overlapping interval
+     observed: Available | Available: Aurora Seminar Room is free 11:00–12:00. | AVAILABLE
+PASS [desktop] E1 duration = 120 (upper boundary)
+     observed: Available | Available: Aurora Seminar Room is free 11:00–13:00. | AVAILABLE
+PASS [desktop] E2 start exactly at now (09:00)
+     observed: Unavailable | Invalid input: start time must be after the current time 09:00. | IN_PAST
+PASS [desktop] E3 empty start
+     observed: Unavailable | Invalid input: enter the start time as HH:MM. | INVALID_INPUT
+PASS [desktop] E4 non-numeric duration
+     observed: Unavailable | Invalid input: duration must be a whole number from 1 to 120 minutes. | INVALID_DURATION
+PASS [desktop] E5 ends after 24:00
+     observed: Unavailable | Invalid input: the booking must end by 24:00. | INVALID_INPUT
+PASS [desktop] E6 blocked AND past (validation first)
+     observed: Unavailable | Invalid input: start time must be after the current time 09:00. | IN_PAST
+PASS [desktop] E7 XSS payload in start (security)
+     observed: Unavailable | Invalid input: enter the start time as HH:MM. | INVALID_INPUT
+PASS [desktop] T8 booking data unchanged after checks
+     observed: 10:00 11:00 13:00 14:30 | alert dialogs: 0
+PASS [phone] T1 valid free interval
+     observed: Available | Available: Aurora Seminar Room is free 11:30–12:30. | AVAILABLE
+PASS [phone] T2 overlap with an existing booking
+     observed: Unavailable | Unavailable: overlaps the existing booking 10:00–11:00. | CONFLICT
+PASS [phone] T3 blocked room
+     observed: Unavailable | Unavailable: the room is blocked. | BLOCKED
+PASS [phone] T4 duration = 0
+     observed: Unavailable | Invalid input: duration must be a whole number from 1 to 120 minutes. | INVALID_DURATION
+PASS [phone] T5 duration = 121 minutes
+     observed: Unavailable | Invalid input: duration must be a whole number from 1 to 120 minutes. | INVALID_DURATION
+PASS [phone] T6 past start time
+     observed: Unavailable | Invalid input: start time must be after the current time 09:00. | IN_PAST
+PASS [phone] T7 adjacent non-overlapping interval
+     observed: Available | Available: Aurora Seminar Room is free 11:00–12:00. | AVAILABLE
+PASS [phone] E1 duration = 120 (upper boundary)
+     observed: Available | Available: Aurora Seminar Room is free 11:00–13:00. | AVAILABLE
+PASS [phone] E2 start exactly at now (09:00)
+     observed: Unavailable | Invalid input: start time must be after the current time 09:00. | IN_PAST
+PASS [phone] E3 empty start
+     observed: Unavailable | Invalid input: enter the start time as HH:MM. | INVALID_INPUT
+PASS [phone] E4 non-numeric duration
+     observed: Unavailable | Invalid input: duration must be a whole number from 1 to 120 minutes. | INVALID_DURATION
+PASS [phone] E5 ends after 24:00
+     observed: Unavailable | Invalid input: the booking must end by 24:00. | INVALID_INPUT
+PASS [phone] E6 blocked AND past (validation first)
+     observed: Unavailable | Invalid input: start time must be after the current time 09:00. | IN_PAST
+PASS [phone] E7 XSS payload in start (security)
+     observed: Unavailable | Invalid input: enter the start time as HH:MM. | INVALID_INPUT
+PASS [phone] T8 booking data unchanged after checks
+     observed: 10:00 11:00 13:00 14:30 | alert dialogs: 0
+desktop: core 8/8, extra 7/7
+phone: core 8/8, extra 7/7
+DAST-1 (two browsers): Student B's screen before A checked: "Invalid input: enter the start time as HH:MM." | after only A pressed Check: "Unavailable: overlaps the existing booking 10:00–11:00." | leaked=true

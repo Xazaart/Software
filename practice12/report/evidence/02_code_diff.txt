@@ -1,0 +1,452 @@
+diff --git a/README.md b/README.md
+index 140e0c4..9f06f50 100644
+--- a/README.md
++++ b/README.md
+@@ -4,6 +4,7 @@ Fictional data, fixed current time (09:00). No login, database or live APIs.
+ 
+ - AI agents: read [AGENTS.md](AGENTS.md) (Claude Code loads it via [CLAUDE.md](CLAUDE.md)).
+ - Acceptance criteria that must stay true: [ACCEPTANCE.md](ACCEPTANCE.md).
++- Practice #12 code-based solution (one room, start + duration): [practice12/code/](practice12/code/) against [practice12/CONTRACT.md](practice12/CONTRACT.md); tests in `tests/p12-code.test.js`.
+ 
+ ## Requirements
+ Node.js 22+ (tests; `npm test` uses a glob, so every `tests/*.test.js` file runs). Any static file server (app), because ES modules don't load over file://.
+diff --git a/practice12/code/availability.js b/practice12/code/availability.js
+new file mode 100644
+index 0000000..35910e3
+--- /dev/null
++++ b/practice12/code/availability.js
+@@ -0,0 +1,53 @@
++// Layer 2: deterministic availability calculation. Pure: no DOM, no clock, no randomness.
++// The fixture (now, bookings, room name) is passed in, so the same input always gives the same output.
++import { toMinutes } from "../../src/core/time.js";
++import { overlaps } from "../../src/core/availability.js";
++import { MESSAGES } from "./messages.js";
++import { validateRawInput } from "./validate.js";
++
++export const END_OF_DAY = 24 * 60;
++
++/** Minutes since midnight → "HH:MM". 1440 is shown as "24:00" (a booking may end exactly at midnight). */
++export function formatMinutes(total) {
++  const h = Math.floor(total / 60);
++  const m = total % 60;
++  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
++}
++
++/**
++ * Rules after input validation, in contract order:
++ * IN_PAST → INVALID_INPUT (ends after 24:00) → BLOCKED → CONFLICT → AVAILABLE.
++ * `request` = { start, duration, blocked } in minutes (output of validateRawInput).
++ */
++export function checkRequest(request, fixture) {
++  const { start, duration, blocked } = request;
++  const now = toMinutes(fixture.now);
++  // AC1: strictly after now. A misconfigured `now` fails closed (treated as "too late for anything").
++  if (now === null || start <= now) {
++    return { available: false, code: "IN_PAST", message: MESSAGES.inPast(fixture.now) };
++  }
++  const end = start + duration;
++  if (end > END_OF_DAY) {
++    return { available: false, code: "INVALID_INPUT", message: MESSAGES.endsAfterMidnight };
++  }
++  if (blocked) return { available: false, code: "BLOCKED", message: MESSAGES.blocked };
++  // AC3: half-open intervals via the shared overlaps(); touching is allowed.
++  // Fail closed: a booking that cannot be parsed counts as a conflict, never as "free".
++  const conflict = fixture.bookings.find((b) => {
++    const bs = toMinutes(b.start), be = toMinutes(b.end);
++    return bs === null || be === null || be <= bs || overlaps(start, end, bs, be);
++  });
++  if (conflict) return { available: false, code: "CONFLICT", message: MESSAGES.conflict(conflict) };
++  return {
++    available: true,
++    code: "AVAILABLE",
++    message: MESSAGES.available(fixture.roomName, formatMinutes(start), formatMinutes(end)),
++  };
++}
++
++/** Full contract: raw form/test input → { available, code, message }. Never mutates the fixture. */
++export function evaluate(raw, fixture) {
++  const v = validateRawInput(raw);
++  if (!v.ok) return { available: v.available, code: v.code, message: v.message };
++  return checkRequest(v, fixture);
++}
+diff --git a/practice12/code/data.js b/practice12/code/data.js
+new file mode 100644
+index 0000000..9e205e2
+--- /dev/null
++++ b/practice12/code/data.js
+@@ -0,0 +1,18 @@
++// Practice #12 fixture. Fictional data only, identical to practice12/CONTRACT.md.
++// Deep-frozen so no check can change the bookings (AC5 / T8).
++function deepFreeze(obj) {
++  Object.values(obj).forEach((v) => {
++    if (v && typeof v === "object") deepFreeze(v);
++  });
++  return Object.freeze(obj);
++}
++
++export const FIXTURE = deepFreeze({
++  roomId: "R101",
++  roomName: "Aurora Seminar Room",
++  now: "09:00",
++  bookings: [
++    { start: "10:00", end: "11:00" },
++    { start: "13:00", end: "14:30" },
++  ],
++});
+diff --git a/practice12/code/index.html b/practice12/code/index.html
+new file mode 100644
+index 0000000..85f902c
+--- /dev/null
++++ b/practice12/code/index.html
+@@ -0,0 +1,76 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1">
++  <title>Room Availability – Practice 12</title>
++  <style>
++    :root {
++      --ink: #1d2433; --muted: #5a6478; --line: #d0d6e2; --bg: #f6f7fa; --card: #ffffff;
++      --accent: #2b6cb0; --ok-bg: #e6f6ec; --ok-ink: #1e6b3a; --fail-bg: #fdecec; --fail-ink: #a61b1b;
++    }
++    * { box-sizing: border-box; }
++    body { margin: 0; font-family: system-ui, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.45; }
++    main { max-width: 880px; margin: 0 auto; padding: 1rem; }
++    h1 { font-size: 1.35rem; margin: .25rem 0; }
++    .sub { color: var(--muted); margin: 0 0 1rem; }
++    .layout { display: grid; gap: 1rem; grid-template-columns: 1fr; }
++    @media (min-width: 720px) { .layout { grid-template-columns: 3fr 2fr; } }
++    section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; min-width: 0; }
++    h2 { font-size: 1rem; margin: 0 0 .75rem; }
++    .field { display: grid; gap: .3rem; margin-bottom: .85rem; }
++    label { font-weight: 600; }
++    .hint { color: var(--muted); font-size: .85rem; font-weight: 400; }
++    input[type="text"] { width: 100%; font: inherit; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: 8px; }
++    input:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
++    .check { display: flex; align-items: center; gap: .5rem; font-weight: 600; margin-bottom: 1rem; min-height: 44px; }
++    .check input { width: 1.25rem; height: 1.25rem; }
++    button { font: inherit; font-weight: 600; width: 100%; min-height: 44px; border: 0; border-radius: 8px;
++             background: var(--accent); color: #fff; cursor: pointer; }
++    @media (min-width: 720px) { button { width: auto; padding: 0 1.5rem; } }
++    #result { margin-top: 1rem; border-radius: 10px; }
++    .verdict { font-size: 1.5rem; font-weight: 700; margin: 0; padding: .6rem .8rem; border-radius: 8px 8px 0 0; }
++    .verdict.ok { background: var(--ok-bg); color: var(--ok-ink); }
++    .verdict.fail { background: var(--fail-bg); color: var(--fail-ink); }
++    .reason { margin: 0; padding: .6rem .8rem; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 8px 8px;
++              overflow-wrap: anywhere; }
++    #bookings { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
++    #bookings li { border: 1px solid var(--line); border-radius: 8px; padding: .5rem .7rem; font-variant-numeric: tabular-nums; }
++    #bookings span { color: var(--muted); }
++    .note { color: var(--muted); font-size: .85rem; margin: .75rem 0 0; }
++  </style>
++</head>
++<body>
++  <main>
++    <h1>Room availability</h1>
++    <p class="sub"><span id="room-name">Aurora Seminar Room (R101)</span> · current time <strong id="now">09:00</strong> · fictional data</p>
++
++    <div class="layout">
++      <section aria-labelledby="form-title">
++        <h2 id="form-title">Check a time slot</h2>
++        <!-- novalidate: every rule and message comes from the JS rule layer, not from browser validation -->
++        <form id="check-form" novalidate>
++          <div class="field">
++            <label for="start">Start time <span class="hint">(HH:MM, 24-hour)</span></label>
++            <input id="start" name="start" type="text" inputmode="numeric" placeholder="11:30" autocomplete="off" maxlength="40">
++          </div>
++          <div class="field">
++            <label for="duration">Duration <span class="hint">(minutes, 1–120)</span></label>
++            <input id="duration" name="duration" type="text" inputmode="numeric" placeholder="60" autocomplete="off" maxlength="40">
++          </div>
++          <label class="check"><input id="blocked" name="blocked" type="checkbox"> Room is blocked</label>
++          <button id="check" type="submit">Check</button>
++        </form>
++        <div id="result" role="status" aria-live="polite" hidden></div>
++      </section>
++
++      <section aria-labelledby="bookings-title">
++        <h2 id="bookings-title">Existing bookings (read-only)</h2>
++        <ul id="bookings"></ul>
++        <p class="note">Bookings are fixed constants. Checking never adds or changes a booking.</p>
++      </section>
++    </div>
++  </main>
++  <script type="module" src="./main.js"></script>
++</body>
++</html>
+diff --git a/practice12/code/main.js b/practice12/code/main.js
+new file mode 100644
+index 0000000..d944bd0
+--- /dev/null
++++ b/practice12/code/main.js
+@@ -0,0 +1,27 @@
++// Layer 3 (DOM wiring only): read raw inputs, call evaluate(), paint. No booking rules live here.
++import { FIXTURE } from "./data.js";
++import { evaluate } from "./availability.js";
++import { renderResult, renderBookings } from "./render.js";
++
++const $ = (id) => document.getElementById(id);
++
++function readRawInput() {
++  return { start: $("start").value, duration: $("duration").value, blocked: $("blocked").checked };
++}
++
++function paintBookings() {
++  $("bookings").innerHTML = renderBookings(FIXTURE.bookings);
++}
++
++$("room-name").textContent = `${FIXTURE.roomName} (${FIXTURE.roomId})`;
++$("now").textContent = FIXTURE.now;
++paintBookings();
++
++$("check-form").addEventListener("submit", (event) => {
++  event.preventDefault();
++  const result = evaluate(readRawInput(), FIXTURE);
++  const box = $("result");
++  box.hidden = false;
++  box.innerHTML = renderResult(result);
++  paintBookings(); // re-read the (frozen) data so the list visibly stays the same after every check
++});
+diff --git a/practice12/code/messages.js b/practice12/code/messages.js
+new file mode 100644
+index 0000000..d661b37
+--- /dev/null
++++ b/practice12/code/messages.js
+@@ -0,0 +1,10 @@
++// Exact visible messages from practice12/CONTRACT.md. Do not reword them.
++export const MESSAGES = Object.freeze({
++  available: (roomName, start, end) => `Available: ${roomName} is free ${start}–${end}.`,
++  conflict: (b) => `Unavailable: overlaps the existing booking ${b.start}–${b.end}.`,
++  blocked: "Unavailable: the room is blocked.",
++  inPast: (now) => `Invalid input: start time must be after the current time ${now}.`,
++  invalidDuration: "Invalid input: duration must be a whole number from 1 to 120 minutes.",
++  invalidStart: "Invalid input: enter the start time as HH:MM.",
++  endsAfterMidnight: "Invalid input: the booking must end by 24:00.",
++});
+diff --git a/practice12/code/render.js b/practice12/code/render.js
+new file mode 100644
+index 0000000..ab9ffd0
+--- /dev/null
++++ b/practice12/code/render.js
+@@ -0,0 +1,20 @@
++// Layer 3 (pure part): presentation. Turns results and data into HTML strings.
++// No rules here: it only displays what availability.js decided. Every dynamic value goes through esc().
++export const esc = (s) =>
++  String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
++
++/** The verdict word shown in large type: only "Available" or "Unavailable" (AC5). */
++export const verdictLabel = (result) => (result.available ? "Available" : "Unavailable");
++
++export function renderResult(result) {
++  const cls = result.available ? "ok" : "fail";
++  return `<p class="verdict ${cls}">${esc(verdictLabel(result))}</p>` +
++    `<p class="reason" data-code="${esc(result.code)}">${esc(result.message)}</p>`;
++}
++
++export function renderBookings(bookings) {
++  if (bookings.length === 0) return `<li class="empty">No existing bookings.</li>`;
++  return bookings
++    .map((b) => `<li><time>${esc(b.start)}</time>–<time>${esc(b.end)}</time> <span>booked</span></li>`)
++    .join("");
++}
+diff --git a/practice12/code/validate.js b/practice12/code/validate.js
+new file mode 100644
+index 0000000..537cd94
+--- /dev/null
++++ b/practice12/code/validate.js
+@@ -0,0 +1,35 @@
++// Layer 1: validation of RAW inputs (strings from the form or from test-cases.json).
++// Pure: no DOM, no fixture data, no clock. Never throws for user input.
++import { toMinutes } from "../../src/core/time.js";
++import { MESSAGES } from "./messages.js";
++
++export const MIN_DURATION = 1;
++export const MAX_DURATION = 120;
++
++const WHOLE_NUMBER_RE = /^\d+$/;
++
++/** Raw start → minutes since midnight, or null when missing/malformed. Uses the shared parser. */
++export function parseStart(raw) {
++  if (typeof raw !== "string") return null;
++  return toMinutes(raw.trim());
++}
++
++/** Raw duration → whole minutes 1–120, or null. Accepts digits only ("60"), so "1.5", "-5", "1e2", "abc", "" fail. */
++export function parseDuration(raw) {
++  const text = typeof raw === "number" ? String(raw) : typeof raw === "string" ? raw.trim() : "";
++  if (!WHOLE_NUMBER_RE.test(text)) return null;
++  const minutes = Number(text);
++  return minutes >= MIN_DURATION && minutes <= MAX_DURATION ? minutes : null;
++}
++
++/**
++ * Contract rule order, input part: INVALID_INPUT (start) → INVALID_DURATION.
++ * Returns { ok: true, start, duration, blocked } or { ok: false, available: false, code, message }.
++ */
++export function validateRawInput(raw = {}) {
++  const start = parseStart(raw.start);
++  if (start === null) return { ok: false, available: false, code: "INVALID_INPUT", message: MESSAGES.invalidStart };
++  const duration = parseDuration(raw.duration);
++  if (duration === null) return { ok: false, available: false, code: "INVALID_DURATION", message: MESSAGES.invalidDuration };
++  return { ok: true, start, duration, blocked: raw.blocked === true };
++}
+diff --git a/tests/p12-code.test.js b/tests/p12-code.test.js
+new file mode 100644
+index 0000000..0e134e8
+--- /dev/null
++++ b/tests/p12-code.test.js
+@@ -0,0 +1,153 @@
++// Practice #12 (code-based): every case in practice12/test-cases.json against the rule functions.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { FIXTURE } from "../practice12/code/data.js";
++import { evaluate, checkRequest, formatMinutes } from "../practice12/code/availability.js";
++import { validateRawInput, parseDuration, parseStart } from "../practice12/code/validate.js";
++import { renderResult, renderBookings, verdictLabel } from "../practice12/code/render.js";
++
++const spec = JSON.parse(readFileSync(new URL("../practice12/test-cases.json", import.meta.url), "utf8"));
++const snapshot = JSON.parse(JSON.stringify(FIXTURE.bookings));
++const ruleCases = [...spec.cases.filter((c) => c.id !== "T8"), ...spec.extra];
++
++test("fixture matches the shared contract fixture", () => {
++  assert.equal(`${FIXTURE.roomName} (${FIXTURE.roomId})`, spec.fixture.room);
++  assert.equal(FIXTURE.now, spec.fixture.now);
++  assert.deepEqual(FIXTURE.bookings, spec.fixture.bookings);
++});
++
++test("test-cases.json contains T1–T8 and E1–E7", () => {
++  assert.deepEqual(spec.cases.map((c) => c.id), ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"]);
++  assert.deepEqual(spec.extra.map((c) => c.id), ["E1", "E2", "E3", "E4", "E5", "E6", "E7"]);
++});
++
++for (const c of ruleCases) {
++  test(`${c.id}: ${c.name}`, () => {
++    assert.deepEqual(evaluate(c.input, FIXTURE), c.expected);
++  });
++}
++
++test("T8: booking data unchanged after running T1–T7 and E1–E7 (twice)", () => {
++  for (let i = 0; i < 2; i++) ruleCases.forEach((c) => evaluate(c.input, FIXTURE));
++  assert.deepEqual(FIXTURE.bookings, spec.cases.find((c) => c.id === "T8").expected.bookings);
++  assert.deepEqual(FIXTURE.bookings, snapshot);
++  assert.ok(Object.isFrozen(FIXTURE.bookings) && FIXTURE.bookings.every(Object.isFrozen));
++  assert.throws(() => FIXTURE.bookings.push({ start: "15:00", end: "16:00" }), TypeError);
++});
++
++test("deterministic: same input gives the same result", () => {
++  const input = { start: "11:30", duration: "60", blocked: false };
++  assert.deepEqual(evaluate(input, FIXTURE), evaluate(input, FIXTURE));
++});
++
++// Mandatory boundaries (AGENTS.md §7)
++test("boundary: touching before a booking is allowed, 1 minute more overlaps", () => {
++  assert.equal(evaluate({ start: "09:30", duration: "30" }, FIXTURE).code, "AVAILABLE");
++  assert.deepEqual(evaluate({ start: "09:30", duration: "31" }, FIXTURE), {
++    available: false, code: "CONFLICT", message: "Unavailable: overlaps the existing booking 10:00–11:00.",
++  });
++});
++test("boundary: starting exactly at a booking's end is allowed (14:30)", () => {
++  assert.equal(evaluate({ start: "14:30", duration: "30" }, FIXTURE).code, "AVAILABLE");
++  assert.equal(evaluate({ start: "14:29", duration: "30" }, FIXTURE).message,
++    "Unavailable: overlaps the existing booking 13:00–14:30.");
++});
++test("boundary: 120 allowed, 121 rejected; 1 allowed, 0 rejected", () => {
++  assert.equal(parseDuration("120"), 120);
++  assert.equal(parseDuration("121"), null);
++  assert.equal(parseDuration("1"), 1);
++  assert.equal(parseDuration("0"), null);
++});
++test("boundary: 09:01 is the first future start; 09:00 is IN_PAST", () => {
++  assert.equal(evaluate({ start: "09:01", duration: "30" }, FIXTURE).code, "AVAILABLE");
++  assert.equal(evaluate({ start: "09:00", duration: "30" }, FIXTURE).code, "IN_PAST");
++});
++test("boundary: ending exactly at 24:00 is allowed, 24:01 is not", () => {
++  assert.deepEqual(evaluate({ start: "23:00", duration: "60" }, FIXTURE), {
++    available: true, code: "AVAILABLE", message: "Available: Aurora Seminar Room is free 23:00–24:00.",
++  });
++  assert.equal(evaluate({ start: "23:01", duration: "60" }, FIXTURE).message, "Invalid input: the booking must end by 24:00.");
++});
++test("a slot that contains a whole booking is a conflict", () => {
++  assert.equal(evaluate({ start: "12:30", duration: "120" }, FIXTURE).message,
++    "Unavailable: overlaps the existing booking 13:00–14:30.");
++});
++
++// Rule order: INVALID_INPUT → INVALID_DURATION → IN_PAST → INVALID_INPUT (24:00) → BLOCKED → CONFLICT
++test("rule order: malformed start wins over bad duration", () => {
++  assert.equal(evaluate({ start: "7pm", duration: "abc", blocked: true }, FIXTURE).code, "INVALID_INPUT");
++});
++test("rule order: bad duration wins over past start", () => {
++  assert.equal(evaluate({ start: "08:00", duration: "0", blocked: true }, FIXTURE).code, "INVALID_DURATION");
++});
++test("rule order: ends after 24:00 wins over blocked", () => {
++  assert.equal(evaluate({ start: "23:30", duration: "60", blocked: true }, FIXTURE).message,
++    "Invalid input: the booking must end by 24:00.");
++});
++test("rule order: blocked wins over conflict", () => {
++  assert.equal(evaluate({ start: "10:30", duration: "60", blocked: true }, FIXTURE).code, "BLOCKED");
++});
++
++test("validation: malformed starts and durations", () => {
++  for (const s of ["", "9:30", "24:00", "12:60", "1130", "11:30:00", null, undefined, 1130]) {
++    assert.equal(parseStart(s), null, `start ${String(s)}`);
++  }
++  assert.equal(parseStart(" 11:30 "), 690);
++  for (const d of ["", " ", "1.5", "-5", "+5", "1e2", "60min", "abc", null, undefined, "999999999999999999999"]) {
++    assert.equal(parseDuration(d), null, `duration ${String(d)}`);
++  }
++  assert.equal(parseDuration(" 60 "), 60);
++  assert.equal(parseDuration(45), 45);
++});
++test("validation: blocked must be exactly true (missing or 'true' string = not blocked)", () => {
++  assert.equal(validateRawInput({ start: "11:30", duration: "60" }).blocked, false);
++  assert.equal(validateRawInput({ start: "11:30", duration: "60", blocked: "true" }).blocked, false);
++  assert.equal(validateRawInput({ start: "11:30", duration: "60", blocked: true }).blocked, true);
++});
++test("never throws for odd input", () => {
++  assert.doesNotThrow(() => evaluate(undefined, FIXTURE));
++  assert.equal(evaluate({}, FIXTURE).code, "INVALID_INPUT");
++});
++test("fail closed: unparseable booking data is never reported as free", () => {
++  const broken = { ...FIXTURE, bookings: [{ start: "xx", end: "11:00" }] };
++  assert.equal(checkRequest({ start: 900, duration: 30, blocked: false }, broken).available, false);
++  const badNow = { ...FIXTURE, now: "9am" };
++  assert.equal(checkRequest({ start: 900, duration: 30, blocked: false }, badNow).available, false);
++});
++test("formatMinutes pads and shows 24:00", () => {
++  assert.equal(formatMinutes(0), "00:00");
++  assert.equal(formatMinutes(545), "09:05");
++  assert.equal(formatMinutes(1440), "24:00");
++});
++
++// Presentation layer (pure string functions; DOM events are checked manually in a browser)
++test("render: verdict is Available or Unavailable with the exact reason", () => {
++  const ok = evaluate({ start: "11:30", duration: "60" }, FIXTURE);
++  const bad = evaluate({ start: "08:00", duration: "30" }, FIXTURE);
++  assert.equal(verdictLabel(ok), "Available");
++  assert.equal(verdictLabel(bad), "Unavailable");
++  assert.match(renderResult(ok), />Available<\/p>/);
++  assert.ok(renderResult(ok).includes("Available: Aurora Seminar Room is free 11:30–12:30."));
++  assert.match(renderResult(bad), />Unavailable<\/p>/);
++});
++test("render: dynamic values are escaped (E7 payload, hostile booking data)", () => {
++  const html = renderResult({ available: false, code: "<b>", message: "<img src=x onerror=alert(1)>" });
++  assert.ok(!html.includes("<img"));
++  assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt;"));
++  const list = renderBookings([{ start: "<script>", end: "\"'&" }]);
++  assert.ok(!list.includes("<script>"));
++  assert.ok(list.includes("&lt;script&gt;") && list.includes("&quot;&#39;&amp;"));
++});
++test("render: booking list shows both fixture bookings", () => {
++  const list = renderBookings(FIXTURE.bookings);
++  assert.equal((list.match(/<li>/g) || []).length, 2);
++  assert.ok(list.includes("10:00") && list.includes("14:30"));
++});
++
++test("layer rule: rule modules do not touch the DOM", () => {
++  for (const f of ["validate.js", "availability.js", "messages.js", "data.js", "render.js"]) {
++    const src = readFileSync(new URL(`../practice12/code/${f}`, import.meta.url), "utf8");
++    assert.doesNotMatch(src, /\bdocument\b|\bwindow\b|\bfetch\s*\(/, f);
++  }
++});

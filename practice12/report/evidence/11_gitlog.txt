@@ -1,0 +1,10 @@
+a72ffa9 test(p12): same exact oracle for both UI runners (verdict+message+code); K2/K3 follow-up DAST script
+c255fc0 Merge Practice #12 low-code export after review
+70be10a feat(p12): low-code solution export (Node-RED + Dashboard 2.0 flow, settings, AI test) and identical UI test runners
+f80c244 docs(p12): fix AC6 wording contradiction found by the AI (non-numeric duration -> INVALID_DURATION, as in E4/AC2)
+ac9c875 Merge Practice #12 code-based solution (AI-built) after human diff review
+eb19994 docs: README pointer to the Practice #12 code-based solution
+738a156 test(p12): check T1-T8 and E1-E7 from test-cases.json plus boundaries and rule order
+3d0e3ef feat(p12): availability page with escaped rendering and read-only bookings
+d6068e7 feat(p12): input validation and deterministic availability rules for the shared contract
+6b3846e docs(p12): shared contract and common test inputs (written before implementation)

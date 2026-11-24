@@ -1,0 +1,10 @@
+$ npm test   # main @ c255fc0, after Practice #12 changes
+# tests 100
+# pass 100
+# fail 0
+$ node --test tests/p12-code.test.js
+# tests 37
+# pass 37
+# fail 0
+$ git diff p12-baseline -- src baseline | wc -l   # existing booking rules untouched
+0

@@ -1,0 +1,140 @@
+**Code-based vs low-code comparison: Practice #12, one room, start time + duration**
+
+Both versions show 30/30 browser passes (`results_code.json` and `results_lowcode.json`, 0 failures each). That number hides real differences in how strict the tests were, how the logic behaves when data is missing, and how exposed the runtime is.
+
+**(1) Comparison by criterion**
+
+**Correctness**
+- **Both pass the same cases:** T1–T8 and E1–E7 pass on desktop and phone viewports (`/home/claude/p12ev/03_code_tests.txt`, `/home/claude/p12ev/04_lowcode_tests.txt`).
+- **The checks are not equally strict.**
+  - The code runner (`/home/claude/p12/practice12/ui-tests/run_code.cjs`) only checks that the text starts with the verdict and contains the message. It never checks `code`.
+  - The low-code runner (`run_lowcode.cjs`) requires an exact match on verdict, message and code.
+- **Code-based extras:** it has 25 unit tests covering boundaries, rule order, fail-closed and escaping (`/home/claude/p12/tests/p12-code.test.js`). No log shows them being run after the change.
+- **Low-code first version was wrong:** it broadcast each user's result to every open dashboard (DAST-1 in `/home/claude/p12ev/04_lowcode_tests_before_repair.txt`). Even before student A pressed Check, B's screen showed an earlier session's message, so stale results are replayed to new visitors.
+- **Missing data:**
+  - Low-code fails open. In `flows.json`, `chg_find` → `sw_r6` routes an undefined `req.conflict` to AVAILABLE if `flow.bookings` is missing.
+  - Code fails closed (`/home/claude/p12/practice12/code/availability.js`, the `checkRequest` conflict lookup).
+- **Whitespace handling differs:** code trims input (`validate.js` `parseStart`/`parseDuration`); low-code tests the raw string with a regex (`sw_r1`, `sw_r2`). The contract doesn't say which is right.
+
+**Maintainability**
+- **Code:** six small layered modules: validate, rules, messages, render, DOM wiring. All messages sit in one place (`messages.js`) and it reuses `src/core/time.js` and `overlaps()`.
+- **Low-code:** about 45 nodes with "0 function nodes". The rules are still code, though: JSONata expressions and regexes stored as strings inside JSON (`chg_minutes`, `chg_find`, `res_available`).
+- **Two sources of truth:** `flows.json` was produced by a Python generator, `/home/claude/p12/practice12/lowcode/build-flow.py`. The generator still has `includeClientData: False` (lines 35–36), so the DAST-1 repair was never carried back into it.
+- **No unit-level tests** exist for the flow.
+
+**Portability**
+- **Code:** it is static files, but it imports `../../src/core`, so it has to be served from the repo root. It also can't open from `file://`.
+- **Low-code:**
+  - It needs a Node-RED 4.1.18 runtime plus the dashboard package.
+  - `package.json` and `userdir-package.json` use caret ranges (`^4.1.18`, `^1.37.0`) and no lockfile is delivered.
+  - `start-node-red.sh` hardcodes `/home/claude/p12lowcode`.
+  - The README install path differs from where it actually ran.
+  - The flow itself is locked to Node-RED and the FlowFuse Dashboard.
+
+**Cost** (`/home/claude/p12ev/00_timelog.txt`)
+- **Code:** agent time 153 s, 0 dependencies, can be hosted statically.
+- **Low-code:** agent time 432 s plus about 74 s of repair. It installs 242 top-level packages, needs a Node process running all the time, and will need regular patching.
+- **Not measured:** human time, hosting cost and maintenance cost.
+
+**Security** (`/home/claude/p12ev/05_security_checks.txt`)
+- **Low-code:**
+  - No `adminAuth`: `GET /flows` returns 200 without login and `/auth/login` returns `{}`.
+  - `/diagnostics` returns 200 and `functionExternalModules` is true.
+  - SCA: 43 advisories (16 high), including `node-red`, `@node-red/runtime` and `@node-red/registry`.
+  - The cross-user leak was fixed only by a settings change (`/home/claude/p12ev/06_lowcode_repair_diff.txt`).
+  - Being low-code does not make it safer. Its attack surface (admin API, websocket state, large dependency tree) is much bigger.
+- **Code:**
+  - No dependencies, no network calls, every value goes through `esc()` before `innerHTML` (`render.js`).
+  - The only server tested is a Python dev server with no CSP and no X-Frame-Options.
+
+**(2) Risks**
+
+**K1: Unauthenticated Node-RED admin API and editor** (low-code, High; Critical if reachable from a network)
+- Anyone who can reach port 1880 could deploy a new flow (running code on the host) or delete the bookings from context.
+- Evidence needed:
+  - An unauthenticated `POST /flows` or `DELETE /context/flow/tab_smart_campus/bookings` returning 2xx.
+  - A connection attempt from another host to the machine's real interface address.
+  - The intended deployment's `settings.js`.
+- In the files: **partly**. Only the read-only GET (200), the empty `/auth/login` and the `uiHost: "127.0.0.1"` grep are shown. No write was attempted, and the "non-loopback" test used 192.0.2.2, which is not this machine's address.
+
+**K2: Fail-open when booking data is missing** (low-code, High for a booking system)
+- If `flow.bookings` is absent, every valid request comes back AVAILABLE. That can happen if context is deleted (see K1), after a restart before the inject fires, or after a context-store change.
+- Evidence needed: a browser or API check run after deleting that context key, expecting a non-AVAILABLE result.
+- In the files: **no** for low-code. For code, the matching fail-closed unit test exists (`p12-code.test.js`, the "fail closed" test at line 112), but there is no run log, so **partly**.
+
+**K3: The DAST-1 fix regresses or is incomplete** (low-code, High: other users' results are exposed)
+- Regenerating the flow from `build-flow.py` brings the leak back.
+- The DAST check is weak in three ways:
+  - It compares only the `txt_message` widget.
+  - "leaked=false" rests on two empty strings.
+  - It never confirms that A received its own result in that run.
+- The stale-state replay to newly connecting clients was not retested as a separate case.
+- Evidence needed:
+  - Regenerate the flow from the script and rerun DAST.
+  - Have DAST assert decision, code and table on B, and A's own result.
+  - Run a check where B connects after A has already checked.
+- In the files: **partly**.
+
+**K4: Vulnerable and unpinned dependencies** (low-code, Medium–High)
+- 43 advisories (16 high) in the runtime tree, caret version ranges, and no lockfile in the deliverable.
+- Evidence needed:
+  - The full `npm audit --json` output with the command shown, advisory IDs and fixed versions.
+  - A reachability assessment.
+  - The lockfile.
+- In the files: **partly**. The summary dict has no command shown next to it, and the printed top-level audit tail is cut off.
+
+**K5: The "identical" tests don't use the same oracle, and the unit-test run is unproven** (both, Medium)
+- The code runner never asserts `code` and uses `includes`; the low-code runner uses exact equality on all three fields.
+- No `npm test` output exists after the P12 change.
+- Evidence needed: the code runner reading `[data-code]` with exact equality, and an `npm test` log with pass and fail counts after the change.
+- In the files: **no**.
+
+**K6: Input normalisation differs between the two** (both, Low–Medium)
+- Example: `" 11:30"` with duration `"60"` gives AVAILABLE in code but INVALID_INPUT in low-code.
+- Evidence needed: whitespace-padded and leading-zero cases (`" 60"`, `"060"`) run through both UIs, plus a contract decision on what is correct.
+- In the files: **no**.
+
+**K7: XSS and output-encoding coverage is untested in the browser** (both, Low)
+- E7 is rejected at validation, so the payload never reaches the output path.
+- Code has no CSP. Low-code relies on Vue's `{{ }}` escaping.
+- Evidence needed:
+  - A browser test where hostile text actually renders (for example, a hostile booking fixture).
+  - Response headers from the real host.
+- In the files: **partly** (a render-escaping unit test exists at `p12-code.test.js:134`, but there's no run log).
+
+**K8: Clean-machine reproducibility and configuration drift** (both, Medium)
+- The security grep ran against `userdir/settings.js`, not the delivered `settings.js`.
+- The README claims the only changes from Node-RED defaults are `uiHost`, `uiPort` and `flowFile`. Nothing shows that.
+- The code version depends on the repo layout.
+- Evidence needed:
+  - A fresh install following each README.
+  - A diff of the delivered `settings.js` against the 4.1.18 default template and against `userdir/settings.js`.
+- In the files: **no**.
+
+**(3) Unsupported assumptions**
+- **"Identical tests":** the inputs are the same but the pass rules differ (K5).
+- **"0 function nodes" read as less code or less risk:** the logic lives in JSONata and regex strings, and the flow was generated from a 17 KB Python script.
+- **"Bound to 127.0.0.1 only":** the probe of 192.0.2.2 proves nothing (TEST-NET address). Only the settings line supports the claim.
+- **"Repair verified":** the DAST result is based on two empty strings, one widget and no check of A's result (K3).
+- **T8 "bookings unchanged":** both runners compare rendered DOM text only. `test-dashboard.cjs` does query flow context through the unauthenticated admin API, but its output isn't in the evidence.
+- **Code-version unit tests pass:** the README points to them, but there is no run output.
+- **README "only changes from defaults":** not diffed. `diagnostics` stays enabled and `functionExternalModules` is true.
+- **"No vulnerabilities":** `userdir` reports 0, but the runtime tree has 43. The second dict has no command shown, so its provenance is unclear.
+- **"phone" results:** these come from a 375 px Chromium viewport, not real devices. No accessibility checks were run.
+- **Cost:** only agent wall-clock time was measured.
+- **E7 as a "security test":** it tests validation, not output encoding.
+- **Contract output `code`:** in the code version it is never visible to the user and never checked in the browser.
+
+**(4) Recommendation**
+
+For this scenario (one room, read-only constants, no login), I recommend the code-based solution. It has no dependencies, fails closed, is layered and unit-testable, and can be served as static files. Most of its remaining gaps are evidence gaps: run `npm test` and log it, assert `code` in the browser runner, and add security headers on the real host. Treat the low-code version as a local prototype only. Before it serves real users it needs:
+- `adminAuth` turned on, or the editor disabled.
+- Diagnostics turned off.
+- A Node-RED update to clear the high advisories, plus pinned versions and a lockfile.
+- The `includeClientData` repair carried into `build-flow.py`, or the generator retired.
+- A fail-closed check for missing bookings.
+- A stronger per-client DAST kept as a regression test.
+
+Neither solution has evidence yet of a secure production deployment.
+
+I did not use anything from memory for this analysis.

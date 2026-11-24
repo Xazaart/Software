@@ -1,0 +1,22 @@
+# Follow-up checks for the AI comparison review (K1, K4, K5, K8), 2026-11-24T18:01:48Z
+
+$ hostname -I
+192.0.2.2 
+$ grep ":0758" /proc/net/tcp   # 0x0758 = port 1880; local address 0100007F = 127.0.0.1
+0100007F:0758 0A
+0100007F:A7CC 06
+(st 0A = LISTEN)
+
+$ diff <(node_modules/node-red/settings.js) practice12/lowcode/settings.js   # default template vs delivered
+146c146
+<     uiPort: process.env.PORT || 1880,
+---
+>     uiPort: 1880,
+153c153
+<     //uiHost: "127.0.0.1",
+---
+>     uiHost: "127.0.0.1",
+
+$ npm audit --omit=dev --json | summary   (in the low-code runtime folder)
+{'info': 0, 'low': 0, 'moderate': 27, 'high': 16, 'critical': 0, 'total': 43}
+direct package node-red: high fix: {'name': 'node-red', 'version': '5.0.10', 'isSemVerMajor': True}
