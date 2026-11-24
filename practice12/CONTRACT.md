@@ -37,7 +37,7 @@ whether the room is **Available** or **Unavailable** and why.
 | AC3 | Overlapping bookings are unavailable. | Intervals are half-open: `[start, start+duration)` overlaps `[b.start, b.end)` if `s < b.end && e > b.start`. **Touching (end = start) is allowed.** |
 | AC4 | Blocked room is unavailable. | A valid request on a blocked room returns `BLOCKED`. |
 | AC5 | Display a clear decision without changing existing bookings. | The page shows "Available" or "Unavailable" with a reason; bookings stay identical after any number of checks. |
-| AC6 | Invalid input receives understandable feedback. | A missing or malformed start, a non-numeric duration, or a booking ending after 24:00 returns `INVALID_INPUT` with a message saying what to fix. |
+| AC6 | Invalid input receives understandable feedback. | A missing or malformed start, or a booking ending after 24:00, returns `INVALID_INPUT`; a non-numeric duration returns `INVALID_DURATION` (as in AC2). Each message says what to fix. |
 
 **Rule order** (applies to both solutions): `INVALID_INPUT` → `INVALID_DURATION` → `IN_PAST` → `INVALID_INPUT` (ends after 24:00) → `BLOCKED` → `CONFLICT` → `AVAILABLE`.
 
