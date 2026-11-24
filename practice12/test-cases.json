@@ -1,0 +1,41 @@
+{
+  "fixture": {
+    "room": "Aurora Seminar Room (R101)",
+    "now": "09:00",
+    "bookings": [{ "start": "10:00", "end": "11:00" }, { "start": "13:00", "end": "14:30" }]
+  },
+  "cases": [
+    { "id": "T1", "name": "valid free interval", "input": { "start": "11:30", "duration": "60", "blocked": false },
+      "expected": { "available": true, "code": "AVAILABLE", "message": "Available: Aurora Seminar Room is free 11:30–12:30." } },
+    { "id": "T2", "name": "overlap with an existing booking", "input": { "start": "10:30", "duration": "60", "blocked": false },
+      "expected": { "available": false, "code": "CONFLICT", "message": "Unavailable: overlaps the existing booking 10:00–11:00." } },
+    { "id": "T3", "name": "blocked room", "input": { "start": "11:30", "duration": "60", "blocked": true },
+      "expected": { "available": false, "code": "BLOCKED", "message": "Unavailable: the room is blocked." } },
+    { "id": "T4", "name": "duration = 0", "input": { "start": "11:30", "duration": "0", "blocked": false },
+      "expected": { "available": false, "code": "INVALID_DURATION", "message": "Invalid input: duration must be a whole number from 1 to 120 minutes." } },
+    { "id": "T5", "name": "duration = 121 minutes", "input": { "start": "11:30", "duration": "121", "blocked": false },
+      "expected": { "available": false, "code": "INVALID_DURATION", "message": "Invalid input: duration must be a whole number from 1 to 120 minutes." } },
+    { "id": "T6", "name": "past start time", "input": { "start": "08:00", "duration": "30", "blocked": false },
+      "expected": { "available": false, "code": "IN_PAST", "message": "Invalid input: start time must be after the current time 09:00." } },
+    { "id": "T7", "name": "adjacent non-overlapping interval", "input": { "start": "11:00", "duration": "60", "blocked": false },
+      "expected": { "available": true, "code": "AVAILABLE", "message": "Available: Aurora Seminar Room is free 11:00–12:00." } },
+    { "id": "T8", "name": "booking data unchanged after checks", "input": "run T1–T7 and the extra cases, then read the bookings again",
+      "expected": { "bookings": [{ "start": "10:00", "end": "11:00" }, { "start": "13:00", "end": "14:30" }] } }
+  ],
+  "extra": [
+    { "id": "E1", "name": "duration = 120 (upper boundary)", "input": { "start": "11:00", "duration": "120", "blocked": false },
+      "expected": { "available": true, "code": "AVAILABLE", "message": "Available: Aurora Seminar Room is free 11:00–13:00." } },
+    { "id": "E2", "name": "start exactly at now (09:00)", "input": { "start": "09:00", "duration": "30", "blocked": false },
+      "expected": { "available": false, "code": "IN_PAST", "message": "Invalid input: start time must be after the current time 09:00." } },
+    { "id": "E3", "name": "empty start", "input": { "start": "", "duration": "30", "blocked": false },
+      "expected": { "available": false, "code": "INVALID_INPUT", "message": "Invalid input: enter the start time as HH:MM." } },
+    { "id": "E4", "name": "non-numeric duration", "input": { "start": "11:30", "duration": "abc", "blocked": false },
+      "expected": { "available": false, "code": "INVALID_DURATION", "message": "Invalid input: duration must be a whole number from 1 to 120 minutes." } },
+    { "id": "E5", "name": "ends after 24:00", "input": { "start": "23:30", "duration": "60", "blocked": false },
+      "expected": { "available": false, "code": "INVALID_INPUT", "message": "Invalid input: the booking must end by 24:00." } },
+    { "id": "E6", "name": "blocked AND past (validation first)", "input": { "start": "08:00", "duration": "30", "blocked": true },
+      "expected": { "available": false, "code": "IN_PAST", "message": "Invalid input: start time must be after the current time 09:00." } },
+    { "id": "E7", "name": "XSS payload in start (security)", "input": { "start": "<img src=x onerror=alert(1)>", "duration": "30", "blocked": false },
+      "expected": { "available": false, "code": "INVALID_INPUT", "message": "Invalid input: enter the start time as HH:MM." } }
+  ]
+}
