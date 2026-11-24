@@ -4,6 +4,7 @@ Fictional data, fixed current time (09:00). No login, database or live APIs.
 
 - AI agents: read [AGENTS.md](AGENTS.md) (Claude Code loads it via [CLAUDE.md](CLAUDE.md)).
 - Acceptance criteria that must stay true: [ACCEPTANCE.md](ACCEPTANCE.md).
+- Practice #12 code-based solution (one room, start + duration): [practice12/code/](practice12/code/) against [practice12/CONTRACT.md](practice12/CONTRACT.md); tests in `tests/p12-code.test.js`.
 
 ## Requirements
 Node.js 22+ (tests; `npm test` uses a glob, so every `tests/*.test.js` file runs). Any static file server (app), because ES modules don't load over file://.
