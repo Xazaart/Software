@@ -20,8 +20,11 @@ const norm = (s) => (s || "").replace(/\s+/g, " ").trim();
       await p.setChecked("#blocked", c.input.blocked); await p.click("#check");
       const shown = norm(await p.textContent("#result"));
       const verdict = c.expected.available ? "Available" : "Unavailable";
-      const pass = shown.includes(c.expected.message) && shown.startsWith(verdict);
-      out.push({ track: "code", view: label, id: c.id, name: c.name, expected: `${verdict} | ${c.expected.message}`, observed: shown, pass });
+      // Same oracle as run_lowcode.cjs (review K5): exact verdict, exact message AND exact reason code.
+      const v = norm(await p.textContent("#result .verdict")), msg = norm(await p.textContent("#result .reason"));
+      const code = await p.getAttribute("#result .reason", "data-code");
+      const pass = v === verdict && msg === c.expected.message && code === c.expected.code;
+      out.push({ track: "code", view: label, id: c.id, name: c.name, expected: `${verdict} | ${c.expected.message}`, observed: `${shown} | ${code}`, pass });
       if (label === "desktop" && ["T1", "T2", "T3", "T5", "T7", "E7"].includes(c.id)) await p.screenshot({ path: `${dir}/code_${c.id}.png` });
       if (label === "phone" && ["T1", "T2"].includes(c.id)) await p.screenshot({ path: `${dir}/code_phone_${c.id}.png`, fullPage: true });
     }
