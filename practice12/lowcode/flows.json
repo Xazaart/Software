@@ -1,0 +1,1267 @@
+[
+    {
+        "id": "tab_smart_campus",
+        "type": "tab",
+        "label": "Smart Campus availability",
+        "disabled": false,
+        "info": "Practice 12 low-code track. Contract: practice12/CONTRACT.md. Fictional data only. Rules group = deterministic booking rules (no UI nodes); Presentation group = dashboard widgets only."
+    },
+    {
+        "id": "ui_base",
+        "type": "ui-base",
+        "name": "Smart Campus",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-control",
+            "ui-notification",
+            "ui-table",
+            "ui-text"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "ui_theme",
+        "type": "ui-theme",
+        "name": "Campus theme",
+        "colors": {
+            "surface": "#1f4e79",
+            "primary": "#1f4e79",
+            "bgPage": "#f4f6f9",
+            "groupBg": "#ffffff",
+            "groupOutline": "#d0d7e2"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "6px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "ui_page",
+        "type": "ui-page",
+        "name": "Room availability",
+        "ui": "ui_base",
+        "path": "/availability",
+        "icon": "calendar-clock",
+        "layout": "grid",
+        "theme": "ui_theme",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "ui_g_form",
+        "type": "ui-group",
+        "name": "Check Aurora Seminar Room (R101)",
+        "page": "ui_page",
+        "width": "6",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ui_g_result",
+        "type": "ui-group",
+        "name": "Result",
+        "page": "ui_page",
+        "width": "6",
+        "height": "1",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ui_g_book",
+        "type": "ui-group",
+        "name": "Existing bookings (read-only, now = 09:00)",
+        "page": "ui_page",
+        "width": "6",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "grp_data",
+        "type": "group",
+        "z": "tab_smart_campus",
+        "name": "1. Fictional data (constants, set once at start-up)",
+        "style": {
+            "label": true,
+            "fill": "#e3f3d3"
+        },
+        "nodes": [
+            "inj_start",
+            "chg_consts",
+            "lo_show_bookings"
+        ],
+        "x": 14,
+        "y": 19,
+        "w": 712,
+        "h": 82
+    },
+    {
+        "id": "inj_start",
+        "type": "inject",
+        "z": "tab_smart_campus",
+        "g": "grp_data",
+        "name": "on deploy / start-up",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0.1",
+        "topic": "",
+        "x": 150,
+        "y": 60,
+        "wires": [
+            [
+                "chg_consts"
+            ]
+        ]
+    },
+    {
+        "id": "chg_consts",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_data",
+        "name": "set room, now, bookings",
+        "rules": [
+            {
+                "t": "set",
+                "p": "room",
+                "pt": "flow",
+                "to": "Aurora Seminar Room (R101)",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "roomName",
+                "pt": "flow",
+                "to": "Aurora Seminar Room",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "now",
+                "pt": "flow",
+                "to": "09:00",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "nowMin",
+                "pt": "flow",
+                "to": "540",
+                "tot": "num"
+            },
+            {
+                "t": "set",
+                "p": "bookings",
+                "pt": "flow",
+                "to": "[{\"start\": \"10:00\", \"end\": \"11:00\"}, {\"start\": \"13:00\", \"end\": \"14:30\"}]",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 390,
+        "y": 60,
+        "wires": [
+            [
+                "lo_show_bookings"
+            ]
+        ]
+    },
+    {
+        "id": "lo_show_bookings",
+        "type": "link out",
+        "z": "tab_smart_campus",
+        "g": "grp_data",
+        "name": "to: show bookings",
+        "mode": "link",
+        "links": [
+            "li_show_bookings"
+        ],
+        "x": 625,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "grp_rules",
+        "type": "group",
+        "z": "tab_smart_campus",
+        "name": "2. Deterministic booking rules (no UI) - rule order top to bottom",
+        "style": {
+            "label": true,
+            "fill": "#dbe9f7"
+        },
+        "nodes": [
+            "li_rules",
+            "sw_r1",
+            "sw_r2",
+            "chg_minutes",
+            "sw_r3",
+            "sw_r4",
+            "sw_r5",
+            "chg_find",
+            "sw_r6",
+            "res_invalid_start",
+            "res_invalid_dur",
+            "res_past",
+            "res_invalid_end",
+            "res_blocked",
+            "res_conflict",
+            "res_available",
+            "lo_rules_return"
+        ],
+        "x": 14,
+        "y": 139,
+        "w": 1312,
+        "h": 322
+    },
+    {
+        "id": "li_rules",
+        "type": "link in",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "check availability rules",
+        "links": [],
+        "x": 110,
+        "y": 180,
+        "wires": [
+            [
+                "sw_r1"
+            ]
+        ]
+    },
+    {
+        "id": "sw_r1",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "AC6: start is HH:MM?",
+        "property": "payload.start",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "regex",
+                "v": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                "vt": "str",
+                "case": false
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 290,
+        "y": 180,
+        "wires": [
+            [
+                "sw_r2"
+            ],
+            [
+                "res_invalid_start"
+            ]
+        ]
+    },
+    {
+        "id": "sw_r2",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "AC2: duration whole 1-120?",
+        "property": "payload.duration",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "regex",
+                "v": "^0*([1-9]|[1-9][0-9]|1[01][0-9]|120)$",
+                "vt": "str",
+                "case": false
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 540,
+        "y": 180,
+        "wires": [
+            [
+                "chg_minutes"
+            ],
+            [
+                "res_invalid_dur"
+            ]
+        ]
+    },
+    {
+        "id": "chg_minutes",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "to minutes (req.*)",
+        "rules": [
+            {
+                "t": "set",
+                "p": "req.start",
+                "pt": "msg",
+                "to": "payload.start",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "req.startMin",
+                "pt": "msg",
+                "to": "$number($substringBefore(payload.start, \":\")) * 60 + $number($substringAfter(payload.start, \":\"))",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "req.duration",
+                "pt": "msg",
+                "to": "$number(payload.duration)",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "req.endMin",
+                "pt": "msg",
+                "to": "req.startMin + req.duration",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "req.blocked",
+                "pt": "msg",
+                "to": "payload.blocked = true",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 760,
+        "y": 180,
+        "wires": [
+            [
+                "sw_r3"
+            ]
+        ]
+    },
+    {
+        "id": "sw_r3",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "AC1: start after 09:00?",
+        "property": "req.startMin",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "nowMin",
+                "vt": "flow"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 300,
+        "y": 260,
+        "wires": [
+            [
+                "sw_r4"
+            ],
+            [
+                "res_past"
+            ]
+        ]
+    },
+    {
+        "id": "sw_r4",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "AC6: ends by 24:00?",
+        "property": "req.endMin",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lte",
+                "v": "1440",
+                "vt": "num"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 540,
+        "y": 260,
+        "wires": [
+            [
+                "sw_r5"
+            ],
+            [
+                "res_invalid_end"
+            ]
+        ]
+    },
+    {
+        "id": "sw_r5",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "AC4: room blocked?",
+        "property": "req.blocked",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 760,
+        "y": 260,
+        "wires": [
+            [
+                "res_blocked"
+            ],
+            [
+                "chg_find"
+            ]
+        ]
+    },
+    {
+        "id": "chg_find",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "find first overlapping booking",
+        "rules": [
+            {
+                "t": "set",
+                "p": "req.conflict",
+                "pt": "msg",
+                "to": "$flowContext(\"bookings\")[($number($substringBefore(start, \":\")) * 60 + $number($substringAfter(start, \":\"))) < $$.req.endMin and ($number($substringBefore(end, \":\")) * 60 + $number($substringAfter(end, \":\"))) > $$.req.startMin][0]",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 320,
+        "y": 340,
+        "wires": [
+            [
+                "sw_r6"
+            ]
+        ]
+    },
+    {
+        "id": "sw_r6",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "AC3: overlaps a booking?",
+        "property": "req.conflict",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "nnull"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 580,
+        "y": 340,
+        "wires": [
+            [
+                "res_conflict"
+            ],
+            [
+                "res_available"
+            ]
+        ]
+    },
+    {
+        "id": "res_invalid_start",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "INVALID_INPUT (start)",
+        "rules": [
+            {
+                "t": "set",
+                "p": "result",
+                "pt": "msg",
+                "to": "{\"available\": false, \"code\": \"INVALID_INPUT\", \"message\": \"Invalid input: enter the start time as HH:MM.\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1060,
+        "y": 180,
+        "wires": [
+            [
+                "lo_rules_return"
+            ]
+        ]
+    },
+    {
+        "id": "res_invalid_dur",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "INVALID_DURATION",
+        "rules": [
+            {
+                "t": "set",
+                "p": "result",
+                "pt": "msg",
+                "to": "{\"available\": false, \"code\": \"INVALID_DURATION\", \"message\": \"Invalid input: duration must be a whole number from 1 to 120 minutes.\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1060,
+        "y": 220,
+        "wires": [
+            [
+                "lo_rules_return"
+            ]
+        ]
+    },
+    {
+        "id": "res_past",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "IN_PAST",
+        "rules": [
+            {
+                "t": "set",
+                "p": "result",
+                "pt": "msg",
+                "to": "{\"available\": false, \"code\": \"IN_PAST\", \"message\": \"Invalid input: start time must be after the current time 09:00.\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1060,
+        "y": 260,
+        "wires": [
+            [
+                "lo_rules_return"
+            ]
+        ]
+    },
+    {
+        "id": "res_invalid_end",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "INVALID_INPUT (24:00)",
+        "rules": [
+            {
+                "t": "set",
+                "p": "result",
+                "pt": "msg",
+                "to": "{\"available\": false, \"code\": \"INVALID_INPUT\", \"message\": \"Invalid input: the booking must end by 24:00.\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1060,
+        "y": 300,
+        "wires": [
+            [
+                "lo_rules_return"
+            ]
+        ]
+    },
+    {
+        "id": "res_blocked",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "BLOCKED",
+        "rules": [
+            {
+                "t": "set",
+                "p": "result",
+                "pt": "msg",
+                "to": "{\"available\": false, \"code\": \"BLOCKED\", \"message\": \"Unavailable: the room is blocked.\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1060,
+        "y": 340,
+        "wires": [
+            [
+                "lo_rules_return"
+            ]
+        ]
+    },
+    {
+        "id": "res_conflict",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "CONFLICT (message)",
+        "rules": [
+            {
+                "t": "set",
+                "p": "result",
+                "pt": "msg",
+                "to": "{\"available\": false, \"code\": \"CONFLICT\", \"message\": \"Unavailable: overlaps the existing booking \" & req.conflict.start & \"–\" & req.conflict.end & \".\"}",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1060,
+        "y": 380,
+        "wires": [
+            [
+                "lo_rules_return"
+            ]
+        ]
+    },
+    {
+        "id": "res_available",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "AVAILABLE (message)",
+        "rules": [
+            {
+                "t": "set",
+                "p": "result",
+                "pt": "msg",
+                "to": "{\"available\": true, \"code\": \"AVAILABLE\", \"message\": \"Available: \" & $flowContext(\"roomName\") & \" is free \" & req.start & \"–\" & $formatInteger($floor(req.endMin / 60), \"00\") & \":\" & $formatInteger(req.endMin % 60, \"00\") & \".\"}",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1060,
+        "y": 420,
+        "wires": [
+            [
+                "lo_rules_return"
+            ]
+        ]
+    },
+    {
+        "id": "lo_rules_return",
+        "type": "link out",
+        "z": "tab_smart_campus",
+        "g": "grp_rules",
+        "name": "return result",
+        "mode": "return",
+        "links": [],
+        "x": 1265,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "grp_ui",
+        "type": "group",
+        "z": "tab_smart_campus",
+        "name": "3. Presentation (FlowFuse Dashboard 2.0) - calls the rules via link call",
+        "style": {
+            "label": true,
+            "fill": "#fff5d6"
+        },
+        "nodes": [
+            "form",
+            "lc_rules",
+            "sw_avail",
+            "chg_ok",
+            "chg_nok",
+            "chg_msg",
+            "chg_code",
+            "txt_decision",
+            "txt_message",
+            "txt_code",
+            "evt",
+            "sw_pageview",
+            "li_show_bookings",
+            "chg_read_bookings",
+            "tbl_bookings",
+            "txt_now"
+        ],
+        "x": 14,
+        "y": 499,
+        "w": 1312,
+        "h": 322
+    },
+    {
+        "id": "form",
+        "type": "ui-form",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "booking request form",
+        "group": "ui_g_form",
+        "label": "",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "options": [
+            {
+                "label": "Start time (HH:MM)",
+                "key": "start",
+                "type": "text",
+                "required": false,
+                "rows": null
+            },
+            {
+                "label": "Duration (minutes, 1-120)",
+                "key": "duration",
+                "type": "text",
+                "required": false,
+                "rows": null
+            },
+            {
+                "label": "Room is blocked",
+                "key": "blocked",
+                "type": "checkbox",
+                "required": false,
+                "rows": null
+            }
+        ],
+        "formValue": {
+            "start": "",
+            "duration": "",
+            "blocked": false
+        },
+        "payload": "",
+        "submit": "Check",
+        "cancel": "clear",
+        "resetOnSubmit": false,
+        "topic": "topic",
+        "topicType": "msg",
+        "splitLayout": "",
+        "className": "",
+        "passthru": false,
+        "dropdownOptions": [],
+        "x": 140,
+        "y": 570,
+        "wires": [
+            [
+                "lc_rules"
+            ]
+        ]
+    },
+    {
+        "id": "lc_rules",
+        "type": "link call",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "call booking rules",
+        "links": [
+            "li_rules"
+        ],
+        "linkType": "static",
+        "timeout": "5",
+        "x": 350,
+        "y": 570,
+        "wires": [
+            [
+                "sw_avail",
+                "chg_msg",
+                "chg_code",
+                "chg_read_bookings"
+            ]
+        ]
+    },
+    {
+        "id": "sw_avail",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "available?",
+        "property": "result.available",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 560,
+        "y": 550,
+        "wires": [
+            [
+                "chg_ok"
+            ],
+            [
+                "chg_nok"
+            ]
+        ]
+    },
+    {
+        "id": "chg_ok",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "Available (green)",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "Available",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "class",
+                "pt": "msg",
+                "to": "text-success font-weight-bold",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 760,
+        "y": 530,
+        "wires": [
+            [
+                "txt_decision"
+            ]
+        ]
+    },
+    {
+        "id": "chg_nok",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "Unavailable (red)",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "Unavailable",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "class",
+                "pt": "msg",
+                "to": "text-error font-weight-bold",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 760,
+        "y": 570,
+        "wires": [
+            [
+                "txt_decision"
+            ]
+        ]
+    },
+    {
+        "id": "chg_msg",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "payload = result.message",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "result.message",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 780,
+        "y": 610,
+        "wires": [
+            [
+                "txt_message"
+            ]
+        ]
+    },
+    {
+        "id": "chg_code",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "payload = result.code",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "result.code",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 770,
+        "y": 650,
+        "wires": [
+            [
+                "txt_code"
+            ]
+        ]
+    },
+    {
+        "id": "txt_decision",
+        "type": "ui-text",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "group": "ui_g_result",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Decision",
+        "label": "Decision:",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": true,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1000,
+        "y": 550,
+        "wires": []
+    },
+    {
+        "id": "txt_message",
+        "type": "ui-text",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "group": "ui_g_result",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "Message",
+        "label": "Message:",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": true,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1000,
+        "y": 610,
+        "wires": []
+    },
+    {
+        "id": "txt_code",
+        "type": "ui-text",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "group": "ui_g_result",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "Code",
+        "label": "Code:",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": true,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1000,
+        "y": 650,
+        "wires": []
+    },
+    {
+        "id": "evt",
+        "type": "ui-event",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "ui": "ui_base",
+        "name": "dashboard events",
+        "x": 130,
+        "y": 730,
+        "wires": [
+            [
+                "sw_pageview"
+            ]
+        ]
+    },
+    {
+        "id": "sw_pageview",
+        "type": "switch",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "page view?",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "$pageview",
+                "vt": "str"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 1,
+        "x": 320,
+        "y": 730,
+        "wires": [
+            [
+                "chg_read_bookings"
+            ]
+        ]
+    },
+    {
+        "id": "li_show_bookings",
+        "type": "link in",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "show bookings",
+        "links": [
+            "lo_show_bookings"
+        ],
+        "x": 345,
+        "y": 770,
+        "wires": [
+            [
+                "chg_read_bookings"
+            ]
+        ]
+    },
+    {
+        "id": "chg_read_bookings",
+        "type": "change",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "name": "payload = copy of flow.bookings",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "bookings",
+                "tot": "flow",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 590,
+        "y": 750,
+        "wires": [
+            [
+                "tbl_bookings",
+                "txt_now"
+            ]
+        ]
+    },
+    {
+        "id": "tbl_bookings",
+        "type": "ui-table",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "group": "ui_g_book",
+        "name": "bookings table",
+        "label": "",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "maxrows": 0,
+        "passthru": false,
+        "autocols": false,
+        "showSearch": false,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [
+            {
+                "title": "Start",
+                "key": "start",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "End",
+                "key": "end",
+                "keyType": "key",
+                "type": "text",
+                "width": "",
+                "align": "start"
+            }
+        ],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "className": "",
+        "x": 870,
+        "y": 730,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "txt_now",
+        "type": "ui-text",
+        "z": "tab_smart_campus",
+        "g": "grp_ui",
+        "group": "ui_g_book",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "room / now",
+        "label": "",
+        "format": "Aurora Seminar Room (R101) - current time fixed at 09:00 (fictional data)",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 14,
+        "color": "#717171",
+        "wrapText": true,
+        "className": "",
+        "value": "",
+        "valueType": "str",
+        "x": 850,
+        "y": 770,
+        "wires": []
+    }
+]
